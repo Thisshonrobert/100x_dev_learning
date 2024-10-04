@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 const Receiver = () => {
     const [socket,setSocket] = useState<WebSocket |null>(null);
-    const [pc,setPc] = useState<WebSocket | null>(null)
-
     useEffect(() => {
         const socket = new WebSocket('ws://localhost:8080');
         setSocket(socket);
@@ -28,6 +26,12 @@ const Receiver = () => {
             } else if (message.type === 'iceCandidate') {
                 pc.addIceCandidate(message.candidate);
             }
+            pc.ontrack = (event)=>{
+                const video = document.createElement('video');
+        document.body.appendChild(video);
+        video.srcObject = new MediaStream([event.track]);
+            video.play();
+            }
         }
     }, []);
 
@@ -35,7 +39,8 @@ const Receiver = () => {
     return (
         <div>
          
-          <button >Receive Video</button>
+          
+          RECEIVER
         </div>
       )
 

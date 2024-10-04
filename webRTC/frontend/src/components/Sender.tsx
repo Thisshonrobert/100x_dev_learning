@@ -13,16 +13,40 @@ const Sender = () => {
                 type: 'sender'
             }));
         }
+        setSocket(socket);
     }, []);
 
     async function startSending(){
+        if(!socket) return;
         const pc = new RTCPeerConnection();
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        socket?.send(JSON.stringify({
-            type:"createoffer",
-            sdp:offer
-        }))
+        pc.onnegotiationneeded = async()=>{
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket?.send(JSON.stringify({
+                type:"createoffer",
+                sdp:offer
+            }))
+        }
+        
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                socket?.send(JSON.stringify({
+                    type: 'iceCandidate',
+                    candidate: event.candidate
+                }));
+            }
+        }
+        socket.onmessage = (e)=>{
+            const message = JSON.parse(e.data);
+            if(message.type === "createanswer"){
+                pc.setRemoteDescription(message.sdp)
+            }
+            else if (message.type === 'iceCandidate') {
+                pc.addIceCandidate(message.candidate);
+            }
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+        pc.addTrack(stream.getVideoTracks()[0])
     }
 
   return (
